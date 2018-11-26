@@ -45,10 +45,6 @@ class OrderManager:
                         run = False
                         break
             
-            #print('\n\n    Your current order is as follows: \n')
-            #for x in range(0, len(carrierID)):
-                #print('     Items from Carrier ' + str(carrierID[x]) + ': ' + str(carPick[x]))
-            
             if run:
                 runTemp = input('\n    Do you wish to change your order? (y/n) ')
                 if runTemp != "y":
