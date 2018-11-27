@@ -1,5 +1,5 @@
 # Festo_SmartLab
-This project was made in connection with a Robotics 5th semester course(Software and Automation) given at Aalborg University(AAU). It was developed and tested at the [AAU SMART PRODUCTION LABORATORY](https://www.smartproduction.aau.dk/Laboratory/).  
+This mini-project was made in connection with a Robotics 5th semester course(Software and Automation Framworks) given at Aalborg University(AAU). It was developed and tested at the [AAU SMART PRODUCTION LABORATORY](https://www.smartproduction.aau.dk/Laboratory/).  
 
 ### *Objective*
 Providing a small demonstration on how a PLC could be made to perform tasks given by a remote Server over a TCP connection.
