@@ -1,22 +1,22 @@
 FUNCTION_BLOCK TCP_Conn
 VAR_INPUT
-	TcpIp				: STRING;
-	TcpPort				: UINT;
-	Tcp_Send 			: BOOL;
-	Tcp_Read			: BOOL;
-	msg					: STRING;
+	TcpIp			: STRING;
+	TcpPort			: UINT;
+	Tcp_Send 		: BOOL;
+	Tcp_Read		: BOOL;
+	msg			: STRING;
 END_VAR
 VAR_OUTPUT
 	Tcp_msgReceived		: STRING;
 END_VAR
 VAR
 	// TCP_IP //
-	TCP					: dc_ecp.TcpClientString;
-	TcpData				: INT := 1024;
-	TcpState			: INT;
-	preTcp_msgReceived : STRING;
+	TCP			: dc_ecp.TcpClientString;
+	TcpData			: INT := 1024;
+	TcpState		: INT;
+	preTcp_msgReceived 	: STRING;
 	// TIMER //
-	Timer				: TON;
+	Timer			: TON;
 END_VAR
 ---------------------------------------------------------------------------------------------------------------
 
