@@ -1,1 +1,1 @@
-Under development
+The .project code can only be viewed if its downloaded on a pc that has codesys installed. However, if you don't want to do that to see the developed code then you can view it in [The blocks in md](https://github.com/Svendsen92/Festo_SmartLab/tree/master/Festo_PLC/The%20Blocks%20in%20md) 
