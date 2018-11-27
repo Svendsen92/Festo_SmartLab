@@ -1,0 +1,36 @@
+FUNCTION_BLOCK RFID_Read
+VAR_OUTPUT
+	rfid_tag		: UINT;
+END_VAR
+VAR
+	// RFID_VAR //
+	RFIDReader		: dc_ecp.Dtm425;
+	RFIDData		: dc_ecp.st_CPF_RfidData;
+	RFIDState		: INT := 0;
+	carrierID		: UINT := 0;
+END_VAR
+------------------------------------------------------------------------------------------
+
+CASE RFIDState OF
+	0:
+		IF RFIDReader.xReady THEN
+			RFIDState := 1;
+		END_IF
+	1:
+		RFIDReader.Connect(usiNodeId:=32 , usiNetworkId:=0 , usiChannel:=1);
+		RFIDState := 2;
+	2:
+		IF RFIDReader.xConnected THEN
+			RFIDState := 3;
+		END_IF
+	3:
+		RFIDReader.ReadTag(uiStartAddress := 0, uiDataLength := SIZEOF(RFIDData), ADR(RFIDData));	
+		RFIDState := 4;
+	4:
+		IF RFIDReader.xReady THEN
+			carrierID := dc_ecp.SwapWORD(RFIDData.uiCarrierID);
+		END_IF
+		RFIDState := 3;	
+END_CASE
+RFIDReader();
+rfid_tag := carrierID;
