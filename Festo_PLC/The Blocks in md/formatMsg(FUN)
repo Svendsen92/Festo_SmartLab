@@ -1,13 +1,13 @@
 FUNCTION formatMsg : STRING
 VAR_INPUT
-	bPlcActive			: BOOL;
-	bCONV_RIGHT			: BOOL;
+	bPlcActive		: BOOL;
+	bCONV_RIGHT		: BOOL;
 	bIS_STOPPER_DOWN	: BOOL;
-	bOrderComp			: BOOL;
-	bTag				: UINT;
+	bOrderComp		: BOOL;
+	bTag			: UINT;
 END_VAR
 VAR
-	TcpMsg				: STRING;
+	TcpMsg			: STRING;
 END_VAR
 ---------------------------------------------------------------------------------
 
