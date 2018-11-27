@@ -1,0 +1,65 @@
+FUNCTION_BLOCK TCP_Conn
+VAR_INPUT
+	TcpIp				: STRING;
+	TcpPort				: UINT;
+	Tcp_Send 			: BOOL;
+	Tcp_Read			: BOOL;
+	msg					: STRING;
+END_VAR
+VAR_OUTPUT
+	Tcp_msgReceived		: STRING;
+END_VAR
+VAR
+	// TCP_IP //
+	TCP					: dc_ecp.TcpClientString;
+	TcpData				: INT := 1024;
+	TcpState			: INT;
+	preTcp_msgReceived : STRING;
+	// TIMER //
+	Timer				: TON;
+END_VAR
+---------------------------------------------------------------------------------------------------------------
+
+CASE TcpState OF	
+	0://Reset connection
+		TCP.Reset();
+		TcpState:=1;
+	1: //Wait for ready
+		IF TCP.xReady THEN
+			TcpState := 2;
+		END_IF
+	2: //Connecting
+		TCP.Connect(sIP:=TcpIp,uiPort:=TcpPort);
+		TcpState := 3;
+	3: //Check if its connected properly
+		IF TCP.xConnected THEN
+			TcpState := 4;
+		ELSE 
+			TcpState := 2; 
+		END_IF
+	4: //send data
+		IF Tcp_Send THEN
+			TCP.Send(sMessage:=msg);
+			Timer(IN:=TRUE, PT:=INT_TO_TIME(100));
+			IF Timer.Q THEN
+				Tcp_SEND := FALSE;
+				Timer(IN:=FALSE);
+				TcpState := 0;
+			END_IF
+		ELSIF Tcp_Read THEN
+			TCP.Receive();
+			Tcp_msgReceived := TCP.sReceived;
+			TcpState := 3;
+			IF Tcp_msgReceived <> preTcp_msgReceived THEN
+				Tcp_Read := FALSE;
+				preTcp_msgReceived := Tcp_msgReceived;
+				TcpState := 0;
+			END_IF
+		ELSE
+			TcpState := 0;
+		END_IF
+END_CASE
+TCP();
+
+
+
