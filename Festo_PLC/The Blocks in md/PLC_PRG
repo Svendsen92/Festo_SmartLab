@@ -32,16 +32,15 @@ VAR
 	i			: INT;
 	mainState		: INT;
 END_VAR
-
 ---------------------------------------------------------------------------------------------------------
-
 
 CASE mainState OF 
 	0:	// Trys to estabilish a connection and if connected reads the buffer 
 		Tcp_msg := '';
 		myTCP(TcpIp:=TCP_IP, TcpPort:=TCP_PORT, Tcp_Read:=TRUE);
 		Tcp_msg := myTCP.Tcp_msgReceived;
-
+		
+		// Checks if the server sent the correct message to initiate the procedure
 		IF Tcp_msg = '0:0:0:0:0' THEN
 			myTCP.Tcp_Read := FALSE;
 			TcpPlcActive := TRUE;
@@ -49,16 +48,17 @@ CASE mainState OF
 			TcpOrderComp := FALSE;
 			mainState := 1;
 		END_IF
-	1:	// 
+	1:	// Sends a message back to the server that the PLC is ready to receive further instructions
 		Tcp_msg := '';
 		Tcp_msg := formatMsg(bPlcActive:=TcpPlcActive, bCONV_RIGHT:=CONV_RIGHT, bIS_STOPPER_DOWN:=IS_STOPPER_DOWN, bOrderComp:=TcpOrderComp, bTag:=0);
 		myTCP(msg:=Tcp_msg ,Tcp_Send:=TRUE);	// This msg bring the server into the ordering mode
 		mainState := 2;
-	2:
+	2:	// The PLC trys to connect to the server and reads the message with the instructions
 		Tcp_msg := ''; 
-		myTCP(Tcp_Read:=TRUE);	// This waits for connection and read the buffer when connected
+		myTCP(Tcp_Read:=TRUE);
 		Tcp_msg := myTCP.Tcp_msgReceived;
-
+		
+		// Checks that a proper instruction has been received
 		IF Tcp_msg <> '0:0:0:0:0' THEN
 			myTCP.Tcp_Read := FALSE;
 				mainState := 3;
@@ -66,24 +66,25 @@ CASE mainState OF
 			mainState := 2;
 		END_IF
 	3:
-		// Splits a string(str) at string_character(sAT). Ex. TcpMsg := '1:2:3:45:0';  
+		// Splits the received string(str) at string_character(sAT). Ex. TcpMsg := '1:2:3:45:0';  
 		SPLIT(str:=Tcp_msg, sAT:=':');
 		FOR i:=0 TO 5 DO
 			numOfCarr[i] := BYTE_TO_INT(SPLIT.strSplit[i]);
 		END_FOR
 		CONV_RIGHT := TRUE;
 		mainState := 4;
-	4:
+	4:	// Checks if the order from the server has been completed
 		IF carrDone[0] AND carrDone[1] AND carrDone[2] AND carrDone[3] AND carrDone[4] THEN	
-			mainState := 8;
+			mainState := 6;
 		ELSE
 			mainState := 5;
 		END_IF	
-	5:
+	5:	// Reads the RFID tags if a carrier is avaliable
 		IF CARR_AVAL THEN
 			myRFID();
 			rfidTag := myRFID.rfid_tag;
 			IF rfidTag <> preRfidTag AND isCarrNew THEN
+				// Checks if the current carrier is one we want and if it is, then it gets checked of the list 
 				FOR i:=0 TO 4 DO
 					IF carrID[i] = UINT_TO_INT(rfidTag) AND numOfCarr[i] > 0 THEN
 						numOfCarr[i] := numOfCarr[i] -1;
@@ -94,37 +95,42 @@ CASE mainState OF
 				END_FOR
 				preRfidTag := rfidTag;
 				isCarrNew := FALSE;	
+			// Checks if the timer needs to be applied 
 			ELSIF isCarrNew = FALSE THEN
 				TimerR(IN:=TRUE, PT:=INT_TO_TIME(carrDelay *1000));
+				// Checks if the wait time for the current carrier has passed
 				IF TimerR.Q THEN
 					STOPPER_DOWN := TRUE;
 					isCarrNew := TRUE;
 					TimerR(IN:=FALSE);
-					mainState := 4;
+					//mainState := 4;
 				END_IF
 			END_IF
 		END_IF
+		// Checks if the stopper is down and if it is, then it get put back up again
 		IF IS_STOPPER_DOWN THEN
 			STOPPER_DOWN := FALSE;
 		END_IF
 		mainState := 4;
 
-	8:
+	6:	// Sets the variable back into its initial stats
 		FOR i:=0 TO 4 DO
 			carrDone[i] := 0;
 		END_FOR
+		// Stops the conveyor and sets the order as has been completed 
 		CONV_RIGHT := FALSE;
 		TcpOrderComp := TRUE;
-
+		
+		// Send back to the server that the order has been complete along with some other infomation
 		Tcp_msg := '';
 		Tcp_msg := formatMsg(bPlcActive:=TcpPlcActive, bCONV_RIGHT:=CONV_RIGHT, bIS_STOPPER_DOWN:=IS_STOPPER_DOWN, bOrderComp:=TcpOrderComp, bTag:=rfidTag);
-		myTCP(msg:=Tcp_msg ,Tcp_Send:=TRUE);	// This msg bring the server into the ordering mode
-		mainState := 9;
-	9:
+		myTCP(msg:=Tcp_msg ,Tcp_Send:=TRUE);
+		mainState := 7;
+	7:	// Small delay to give the PLC time to send the message
 		Timer(IN:=TRUE, PT:=INT_TO_TIME(100));
 		IF Timer.Q THEN
 			mainState := 0;
 		ELSE
-			mainState := 8;
+			mainState := 6;
 		END_IF
 END_CASE
