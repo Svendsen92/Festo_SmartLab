@@ -2,17 +2,17 @@ PROGRAM PLC_PRG
 VAR
 	/// Inputs ///
 	IS_STOPPER_DOWN	AT %IX1.0	: BOOL;	// Stopper released
-	CARR_AVAL		AT %IX1.1	: BOOL;	// Carrier available
+	CARR_AVAL	AT %IX1.1	: BOOL;	// Carrier available
 	/// Outputs ///	
 	STOPPER_DOWN	AT %QX1.0	: BOOL;	// Release stopper
-	CONV_RIGHT		AT %QX0.4	: BOOL;	// Conveyor to the right
+	CONV_RIGHT	AT %QX0.4	: BOOL;	// Conveyor to the right
 	// TCP //
 	myTCP			: TCP_Conn;
 	TCP_IP			: STRING := '172.20.40.42';
 	TCP_PORT		: UINT := 1234;
 	Tcp_msg			: STRING;
-	TcpPlcActive	: BOOL;
-	TcpOrderComp	: BOOL;
+	TcpPlcActive		: BOOL;
+	TcpOrderComp		: BOOL;
 	// RFID //
 	myRFID			: RFID_Read;
 	rfidTag			: UINT;
@@ -29,7 +29,7 @@ VAR
 	Timer			: TON;
 	TimerR			: TON;
 	// loop VAR //
-	i				: INT;
+	i			: INT;
 	mainState		: INT;
 END_VAR
 
@@ -70,7 +70,6 @@ CASE mainState OF
 		SPLIT(str:=Tcp_msg, sAT:=':');
 		FOR i:=0 TO 5 DO
 			numOfCarr[i] := BYTE_TO_INT(SPLIT.strSplit[i]);
-			//carrDone[1] := SPLIT.strSplit[i];
 		END_FOR
 		CONV_RIGHT := TRUE;
 		mainState := 4;
@@ -82,7 +81,7 @@ CASE mainState OF
 		END_IF	
 	5:
 		IF CARR_AVAL THEN
-			myRFID(readState:=TRUE);
+			myRFID();
 			rfidTag := myRFID.rfid_tag;
 			IF rfidTag <> preRfidTag AND isCarrNew THEN
 				FOR i:=0 TO 4 DO
