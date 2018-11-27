@@ -1,0 +1,131 @@
+PROGRAM PLC_PRG
+VAR
+	/// Inputs ///
+	IS_STOPPER_DOWN	AT %IX1.0	: BOOL;	// Stopper released
+	CARR_AVAL		AT %IX1.1	: BOOL;	// Carrier available
+	/// Outputs ///	
+	STOPPER_DOWN	AT %QX1.0	: BOOL;	// Release stopper
+	CONV_RIGHT		AT %QX0.4	: BOOL;	// Conveyor to the right
+	// TCP //
+	myTCP			: TCP_Conn;
+	TCP_IP			: STRING := '172.20.40.42';
+	TCP_PORT		: UINT := 1234;
+	Tcp_msg			: STRING;
+	TcpPlcActive	: BOOL;
+	TcpOrderComp	: BOOL;
+	// RFID //
+	myRFID			: RFID_Read;
+	rfidTag			: UINT;
+	preRfidTag		: UINT;
+	// Carrier VAR //
+	numOfCarr		: ARRAY[0..5] OF INT := [0,0,0,0,0];
+	carrID			: ARRAY[0..5] OF INT := [1,9,7,8,4]; // THIS is the carriers' acutual ID
+	carrDelay		: INT;
+	carrDone		: ARRAY[0..5] OF BOOL := [0,0,0,0,0];
+	isCarrNew		: BOOL := TRUE;
+	// Split String //
+	SPLIT			: SPLIT_String;
+	// Timer //
+	Timer			: TON;
+	TimerR			: TON;
+	// loop VAR //
+	i				: INT;
+	mainState		: INT;
+END_VAR
+
+---------------------------------------------------------------------------------------------------------
+
+
+CASE mainState OF 
+	0:	// Trys to estabilish a connection and if connected reads the buffer 
+		Tcp_msg := '';
+		myTCP(TcpIp:=TCP_IP, TcpPort:=TCP_PORT, Tcp_Read:=TRUE);
+		Tcp_msg := myTCP.Tcp_msgReceived;
+
+		IF Tcp_msg = '0:0:0:0:0' THEN
+			myTCP.Tcp_Read := FALSE;
+			TcpPlcActive := TRUE;
+			CONV_RIGHT := FALSE;
+			TcpOrderComp := FALSE;
+			mainState := 1;
+		END_IF
+	1:	// 
+		Tcp_msg := '';
+		Tcp_msg := formatMsg(bPlcActive:=TcpPlcActive, bCONV_RIGHT:=CONV_RIGHT, bIS_STOPPER_DOWN:=IS_STOPPER_DOWN, bOrderComp:=TcpOrderComp, bTag:=0);
+		myTCP(msg:=Tcp_msg ,Tcp_Send:=TRUE);	// This msg bring the server into the ordering mode
+		mainState := 2;
+	2:
+		Tcp_msg := ''; 
+		myTCP(Tcp_Read:=TRUE);	// This waits for connection and read the buffer when connected
+		Tcp_msg := myTCP.Tcp_msgReceived;
+
+		IF Tcp_msg <> '0:0:0:0:0' THEN
+			myTCP.Tcp_Read := FALSE;
+				mainState := 3;
+		ELSE
+			mainState := 2;
+		END_IF
+	3:
+		// Splits a string(str) at string_character(sAT). Ex. TcpMsg := '1:2:3:45:0';  
+		SPLIT(str:=Tcp_msg, sAT:=':');
+		FOR i:=0 TO 5 DO
+			numOfCarr[i] := BYTE_TO_INT(SPLIT.strSplit[i]);
+			//carrDone[1] := SPLIT.strSplit[i];
+		END_FOR
+		CONV_RIGHT := TRUE;
+		mainState := 4;
+	4:
+		IF carrDone[0] AND carrDone[1] AND carrDone[2] AND carrDone[3] AND carrDone[4] THEN	
+			mainState := 8;
+		ELSE
+			mainState := 5;
+		END_IF	
+	5:
+		IF CARR_AVAL THEN
+			myRFID(readState:=TRUE);
+			rfidTag := myRFID.rfid_tag;
+			IF rfidTag <> preRfidTag AND isCarrNew THEN
+				FOR i:=0 TO 4 DO
+					IF carrID[i] = UINT_TO_INT(rfidTag) AND numOfCarr[i] > 0 THEN
+						numOfCarr[i] := numOfCarr[i] -1;
+						carrDelay := carrID[i]; 
+					ELSIF numOfCarr[i] = 0 THEN
+						carrDone[i] := TRUE;
+					END_IF
+				END_FOR
+				preRfidTag := rfidTag;
+				isCarrNew := FALSE;	
+			ELSIF isCarrNew = FALSE THEN
+				TimerR(IN:=TRUE, PT:=INT_TO_TIME(carrDelay *1000));
+				IF TimerR.Q THEN
+					STOPPER_DOWN := TRUE;
+					isCarrNew := TRUE;
+					TimerR(IN:=FALSE);
+					mainState := 4;
+				END_IF
+			END_IF
+		END_IF
+		IF IS_STOPPER_DOWN THEN
+			STOPPER_DOWN := FALSE;
+		END_IF
+		mainState := 4;
+
+	8:
+		FOR i:=0 TO 4 DO
+			carrDone[i] := 0;
+		END_FOR
+		CONV_RIGHT := FALSE;
+		TcpOrderComp := TRUE;
+
+		Tcp_msg := '';
+		Tcp_msg := formatMsg(bPlcActive:=TcpPlcActive, bCONV_RIGHT:=CONV_RIGHT, bIS_STOPPER_DOWN:=IS_STOPPER_DOWN, bOrderComp:=TcpOrderComp, bTag:=rfidTag);
+		myTCP(msg:=Tcp_msg ,Tcp_Send:=TRUE);	// This msg bring the server into the ordering mode
+		mainState := 9;
+	9:
+		Timer(IN:=TRUE, PT:=INT_TO_TIME(100));
+		IF Timer.Q THEN
+			mainState := 0;
+		ELSE
+			mainState := 8;
+		END_IF
+END_CASE
