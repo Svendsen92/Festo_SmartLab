@@ -22,15 +22,15 @@ CASE RFIDState OF
 	2:
 		IF RFIDReader.xConnected THEN
 			RFIDState := 3;
+		ELSE
+			RFIDState := 1;
 		END_IF
 	3:
 		RFIDReader.ReadTag(uiStartAddress := 0, uiDataLength := SIZEOF(RFIDData), ADR(RFIDData));	
 		RFIDState := 4;
 	4:
-		IF RFIDReader.xReady THEN
-			carrierID := dc_ecp.SwapWORD(RFIDData.uiCarrierID);
-		END_IF
+		carrierID := dc_ecp.SwapWORD(RFIDData.uiCarrierID);
+		rfid_tag := carrierID;	
 		RFIDState := 3;	
 END_CASE
 RFIDReader();
-rfid_tag := carrierID;
