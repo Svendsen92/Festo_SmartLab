@@ -19,7 +19,6 @@ VAR
 	Timer			: TON;
 END_VAR
 ---------------------------------------------------------------------------------------------------------------
-
 CASE TcpState OF	
 	0://Reset connection
 		TCP.Reset();
@@ -60,6 +59,3 @@ CASE TcpState OF
 		END_IF
 END_CASE
 TCP();
-
-
-
