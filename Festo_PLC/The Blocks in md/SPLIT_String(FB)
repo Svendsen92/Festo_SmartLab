@@ -1,29 +1,29 @@
 FUNCTION_BLOCK SPLIT_String
 VAR_INPUT
-	str		: STRING;
-	sAT		: STRING;
+	str			: STRING;
+	sAT			: STRING;
 END_VAR
 VAR_OUTPUT
-	strSplit	: STRING[50];
+	sSplit			: STRING[50];
+	numOfSplits		: INT;
 END_VAR
 VAR
-	split		: BOOL := TRUE;
-	charPos		: INT;
-	count		: INT := 0;
-	strArray	: STRING[50];
+	split			: BOOL := TRUE;
+	charPos			: INT;
+	strArray		: STRING[50];
 END_VAR
---------------------------------------------------------------------------------------------
-
+----------------------------------------------------------------------------------------------------
 // Splits a string with five entries all seperated be a ":" i.e TcpMsg := '1:2:3:45:0'; //
+numOfSplits := 0;
 WHILE split DO
 	charPos := FIND(str, sAT);
 	IF charPos = 0 THEN
 		split := FALSE;
 		charPos := LEN(str);
 	END_IF
-	strArray[count] := STRING_TO_BYTE(LEFT(str, charPos));
+	strArray[numOfSplits] := STRING_TO_BYTE(LEFT(str, charPos));
 	str := DELETE(str, LEN:=charPos, POS:=1);
-	count := count +1;
+	numOfSplits := numOfSplits +1;
 END_WHILE
 
-strSplit := strArray;
+sSplit := strArray;
