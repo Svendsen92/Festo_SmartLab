@@ -1,14 +1,15 @@
 FUNCTION formatMsg : STRING
 VAR_INPUT
-	bPlcActive		: BOOL;
-	bCONV_RIGHT		: BOOL;
-	bIS_STOPPER_DOWN	: BOOL;
-	bOrderComp		: BOOL;
-	bTag			: UINT;
+	bPlcActive			: BOOL;
+	bCONV_RIGHT			: BOOL;
+	bIS_STOPPER_DOWN		: BOOL;
+	bOrderComp			: BOOL;
+	iTag				: UINT;
 END_VAR
 VAR
-	TcpMsg			: STRING;
+	TcpMsg				: STRING;
 END_VAR
+
 ---------------------------------------------------------------------------------
 
 TcpMsg := CONCAT(INT_TO_STRING(BOOL_TO_INT(bPlcActive)), ':'); 
@@ -18,6 +19,6 @@ TcpMsg := CONCAT(TcpMsg, INT_TO_STRING(BOOL_TO_INT(bIS_STOPPER_DOWN)));
 TcpMsg := CONCAT(TcpMsg, ':'); 
 TcpMsg := CONCAT(TcpMsg, INT_TO_STRING(BOOL_TO_INT(bOrderComp)));
 TcpMsg := CONCAT(TcpMsg, ':');  
-TcpMsg := CONCAT(TcpMsg, UINT_TO_STRING(bTag));
+TcpMsg := CONCAT(TcpMsg, UINT_TO_STRING(iTag));
 
 formatMsg := TcpMsg;
