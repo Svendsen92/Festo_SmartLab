@@ -45,7 +45,8 @@ def connect(HOST_IP, PORT):
 
 
 def main():
-    HOST_IP = '127.0.0.1' #'172.20.40.44' # This is the Server's ethernet ip address
+    HOST_IP = '172.20.40.42' # This is the Server's ethernet ip address
+#    HOST_IP = '127.0.0.1' # This is if you want to use the simulation PLC on the computer
     PORT = 1234  # This is the port that will be used (non-privileged ports are > 1023)
 
     print("The IP address is: " + HOST_IP)
@@ -60,14 +61,15 @@ def main():
         msg = ""
         rec = {}
 
-        tcpRun = True
-        while tcpRun: 
+        run = True
+        while run: 
             c = connect(HOST_IP, PORT)
             enMsg = "0:0:0:0:0"
             sendMsg(c, enMsg)
             rec = readMsg(c)
             if rec['plcActive']:
-                tcpRun = False
+                run = False
+                c.close()
 
         if newOrder:
             for x in range(0, len(order)):
@@ -77,20 +79,21 @@ def main():
             msg = o.formatOrder(order)
             newOrder = False 
 
-        orderRun = True
-        while orderRun:
+        run = True
+        while run:
             c = connect(HOST_IP, PORT)
             sendMsg(c, msg)
             rec = {}
             rec = readMsg(c)
             if rec['orderComp']:
+                print('\n    Last Carrier RFID tag was: ' + str(rec['lastCarrierID']))
                 newTemp = ""
-                newTemp = input('\n     Do you want to place another order?(y/n) ')
+                newTemp = input('\n\n\n    Do you want to place another order?(y/n) ')
                 if newTemp == 'y':
                     newOrder = True
                 else:
                     mainRun = False
-                orderRun = False
+                run = False
 
     print('\n   Thank you for ordering at SS import ;)')
     c.close()
