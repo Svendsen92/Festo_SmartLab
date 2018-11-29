@@ -39,6 +39,7 @@ CASE TcpState OF
 	4: //send data
 		IF Tcp_Send THEN
 			TCP.Send(sMessage:=msg);
+			// Gives a small delay so that there is time to actually send the data 
 			Timer(IN:=TRUE, PT:=INT_TO_TIME(100));
 			IF Timer.Q THEN
 				Tcp_SEND := FALSE;
@@ -49,6 +50,7 @@ CASE TcpState OF
 			TCP.Receive();
 			Tcp_msgReceived := TCP.sReceived;
 			TcpState := 3;
+			// Checks that we have received new data and is not just reading some old data again
 			IF Tcp_msgReceived <> preTcp_msgReceived THEN
 				Tcp_Read := FALSE;
 				preTcp_msgReceived := Tcp_msgReceived;
